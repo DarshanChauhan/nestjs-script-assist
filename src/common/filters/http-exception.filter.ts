@@ -1,4 +1,4 @@
-import { ExceptionFilter, Catch, ArgumentsHost, HttpException, Logger } from '@nestjs/common';
+import { ArgumentsHost, Catch, ExceptionFilter, HttpException, Logger } from '@nestjs/common';
 import { Request, Response } from 'express';
 
 @Catch(HttpException)
@@ -12,25 +12,27 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const status = exception.getStatus();
     const exceptionResponse = exception.getResponse();
 
-    // TODO: Implement comprehensive error handling
-    // This filter should:
-    // 1. Log errors appropriately based on their severity
-    // 2. Format error responses in a consistent way
-    // 3. Include relevant error details without exposing sensitive information
-    // 4. Handle different types of errors with appropriate status codes
+    const responseData =
+      typeof exceptionResponse === 'string'
+        ? { message: exceptionResponse }
+        : (exceptionResponse as Record<string, any>); // sometime return a string in my last project I can face this error so I can handle this 😉
 
     this.logger.error(
-      `HTTP Exception: ${exception.message}`,
+      `[${request.method}] ${request.url} → ${responseData.message || exception.message}`,
       exception.stack,
     );
 
-    // Basic implementation (to be enhanced by candidates)
     response.status(status).json({
       success: false,
       statusCode: status,
-      message: exception.message,
+      message: responseData.message || exception.message || 'An unexpected error occurred',
+      error: responseData.error || null,
+      data: null,
       path: request.url,
+      method: request.method,
+      requestId: request.headers['x-request-id'] || null,
       timestamp: new Date().toISOString(),
+      ...(process.env.NODE_ENV !== 'production' && { stack: exception.stack }),
     });
   }
-} 
+}

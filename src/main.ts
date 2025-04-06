@@ -2,10 +2,13 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import * as fs from 'fs';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  
+  const app = await NestFactory.create(AppModule, {
+    logger: false,
+  });
+
   // Global validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
@@ -35,5 +38,12 @@ async function bootstrap() {
   await app.listen(port);
   console.log(`Application running on: http://localhost:${port}`);
   console.log(`Swagger documentation: http://localhost:${port}/api`);
+  fs.readFile('darshan.txt', 'utf8', (err, data) => {
+    if (err) {
+      console.error('Error reading darshan.txt:', err);
+    } else {
+      console.log(data);
+    }
+  });
 }
-bootstrap(); 
+bootstrap();

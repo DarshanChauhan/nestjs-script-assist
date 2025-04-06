@@ -18,18 +18,10 @@ export class OverdueTasksService {
     private tasksRepository: Repository<Task>,
   ) {}
 
-  // TODO: Implement the overdue tasks checker
-  // This method should run every hour and check for overdue tasks
   @Cron(CronExpression.EVERY_HOUR)
   async checkOverdueTasks() {
     this.logger.debug('Checking for overdue tasks...');
-    
-    // TODO: Implement overdue tasks checking logic
-    // 1. Find all tasks that are overdue (due date is in the past)
-    // 2. Add them to the task processing queue
-    // 3. Log the number of overdue tasks found
-    
-    // Example implementation (incomplete - to be implemented by candidates)
+
     const now = new Date();
     const overdueTasks = await this.tasksRepository.find({
       where: {
@@ -37,12 +29,28 @@ export class OverdueTasksService {
         status: TaskStatus.PENDING,
       },
     });
-    
+
     this.logger.log(`Found ${overdueTasks.length} overdue tasks`);
-    
-    // Add tasks to the queue to be processed
-    // TODO: Implement adding tasks to the queue
-    
+
+    //  Sequential approach
+    for (const task of overdueTasks) {
+      await this.taskQueue.add('process-overdue-task', {
+        taskId: task.id,
+      });
+    }
+
+    //  Parallel approach with queue options
+    // await Promise.all(
+    //   overdueTasks.map(task =>
+    //     this.taskQueue.add(
+    //       'process-overdue-task',
+    //       { taskId: task.id },
+    //       { attempts: 3, backoff: { type: 'exponential', delay: 5000 } } // retries + backoff
+    //     )
+    //   )
+    // );
+
+    this.logger.log(`Queued ${overdueTasks.length} overdue tasks for processing`);
     this.logger.debug('Overdue tasks check completed');
   }
-} 
+}
